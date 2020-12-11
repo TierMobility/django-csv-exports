@@ -35,12 +35,4 @@ setup(
     long_description=read_file('README.rst'),
     test_suite="runtests.runtests",
     zip_safe=False,
-    extras_require={
-        'pandas': [
-            'pandas',
-            'numpy',
-            'python-dateutil',
-            'pytz'
-        ]
-    }
 )
