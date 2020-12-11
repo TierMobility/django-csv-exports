@@ -28,30 +28,32 @@ def export_as_csv(admin_model, request, queryset):
         has_csv_permission = admin_model.has_csv_permission(request) \
             if (hasattr(admin_model, 'has_csv_permission') and callable(getattr(admin_model, 'has_csv_permission'))) \
             else True
-    if has_csv_permission:
-        opts = admin_model.model._meta
-        if getattr(admin_model, 'csv_fields', None):
-            field_names = admin_model.csv_fields
-        else:
-            field_names = [field.name for field in opts.fields]
-            field_names.sort()
+    if not has_csv_permission:
+        return HttpResponseForbidden()
 
-        if django.VERSION[0] == 1 and django.VERSION[1] <= 5:
-            response = HttpResponse(mimetype='text/csv')
-        else:
-            response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename=%s.csv' % text(opts).replace('.', '_')
+    opts = admin_model.model._meta
+    if getattr(admin_model, 'csv_fields', None):
+        field_names = admin_model.csv_fields
+    else:
+        field_names = [field.name for field in opts.fields]
+        field_names.sort()
 
-        if pandas is not None:
-            queryset = queryset.values_list(*field_names)
-            pandas.DataFrame(list(queryset), columns=field_names).to_csv(response, index=False, encoding='utf-8')
-        else:
-            writer = csv.writer(response)
-            writer.writerow(list(field_names))
-            for obj in queryset:
-                writer.writerow([text(getattr(obj, field)) for field in field_names])
-        return response
-    return HttpResponseForbidden()
+    if django.VERSION[0] == 1 and django.VERSION[1] <= 5:
+        response = HttpResponse(mimetype='text/csv')
+    else:
+        response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=%s.csv' % text(opts).replace('.', '_')
+
+    if pandas is not None:
+        queryset = queryset.values_list(*field_names)
+        pandas.DataFrame(list(queryset), columns=field_names).to_csv(response, index=False, encoding='utf-8')
+    else:
+        writer = csv.writer(response)
+        writer.writerow(list(field_names))
+        for obj in queryset:
+            writer.writerow([text(getattr(obj, field)) for field in field_names])
+    return response
+    
 export_as_csv.short_description = "Export selected objects as csv file"
 
 
