@@ -25,9 +25,11 @@ def export_as_csv(admin_model, request, queryset):
         codename = '%s_%s' % ('csv', admin_opts.object_name.lower())
         has_csv_permission = request.user.has_perm("%s.%s" % (admin_opts.app_label, codename))
     else:
-        has_csv_permission = admin_model.has_csv_permission(request) \
-            if (hasattr(admin_model, 'has_csv_permission') and callable(getattr(admin_model, 'has_csv_permission'))) \
-            else True
+        try:
+            has_csv_permission = admin_model.has_csv_permission(request)
+        except (AttributeError, TypeError):
+            has_csv_permission = True
+
     if not has_csv_permission:
         return HttpResponseForbidden()
 
