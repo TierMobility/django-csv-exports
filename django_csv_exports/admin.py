@@ -3,8 +3,10 @@ import csv
 import django
 from django.conf import settings
 from django.contrib import admin
+from django.contrib.admin.utils import lookup_field
 from django.http import HttpResponse, HttpResponseForbidden
 from builtins import str as text
+from django.core.exceptions import FieldDoesNotExist
 
 
 def export_as_csv(admin_model, request, queryset):
@@ -52,8 +54,12 @@ def export_as_csv(admin_model, request, queryset):
     else:
         writer = csv.writer(response)
         writer.writerow(list(field_names))
-        for obj in queryset:
-            writer.writerow([text(getattr(obj, field)) for field in field_names])
+        for obj in queryset.iterator():
+            values = []
+            for field in field_names:
+                f, attr, value = lookup_field(field, obj, admin_model)
+                values.append(value)
+            writer.writerow(values)
     return response
     
 export_as_csv.short_description = "Export selected objects as csv file"
